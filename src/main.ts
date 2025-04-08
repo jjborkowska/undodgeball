@@ -15,6 +15,8 @@ class Game {
 
     private lastTickTimeStamp: number;
 
+    private score: number;
+
     private keys: Record<string, boolean> = {};
 
     /**
@@ -29,24 +31,14 @@ class Game {
         this.canvas.width = window.innerWidth - 1;
         this.canvas.height = window.innerHeight - 4;
 
-        const enemyRadius = 10 + 10 * Math.random();
 
-        const enemyAmount = 5;
-        for(let i = 0; i < enemyAmount; i++) {
-            this.enemies.push(
-                new Enemy(
-                    enemyRadius + (this.canvas.width - 2 * enemyRadius) * Math.random(),
-                    this.canvas.height * 0.8 + this.canvas.height * 0.2 * Math.random(),
-                    enemyRadius,
-                    10 * Math.random(),
-                    -5 + 10 * Math.random(),
-                    0,
-                    'blue'
-                ),
-            )
-        }
+        const enemyAmount = 20 + Math.round(20 * Math.random());
+        this.addEnemies(enemyAmount);
+
 
         this.player = new Player(this.canvas.width / 2, 50, 50, 0.5, 'red');
+
+        this.score = 0;
 
         // Listen for keyboard input
         window.addEventListener("keydown", (event) => this.keys[event.key.toLowerCase()] = true);
@@ -95,16 +87,60 @@ class Game {
             enemy.draw(this.canvas);
         })
 
-        // Call this method again on the next animation frame
+        const time = Math.round(performance.now() / 1000)
 
-        const gameover = this.enemies.some((enemy) => {
-            return this.player.isHittingOtherBall(enemy)
+        this.drawText(ctx, `Score: ${this.score}`, 10, 50)
+        this.drawText(ctx, `Time: ${time}`, 10, 100)
+
+        // Call this method again on the next animation frame            
+
+        this.enemies.forEach((enemy, index) => {
+            if (this.player.isHittingOtherBall(enemy)) {
+                this.enemies.splice(index, 1)
+                this.score++
+                this.addEnemies(1)
+            }
         });
 
-        if (!gameover) {
+        if(time < 30) {
             requestAnimationFrame(this.step);
+        } else {
+            ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            ctx.fillStyle = 'black'
+            ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            this.drawText(ctx, `You are shit`, this.canvas.width / 2, this.canvas.height / 2, 'white')
+            this.drawText(ctx, `Score: ${this.score}`, this.canvas.width / 2, (this.canvas.height / 2) + 40, 'white')
         }
     };
+
+    private addEnemies(enemyAmount: number): void {
+        for (let i = 0; i < enemyAmount; i++) {
+            const enemyRadius = 2 + 5 * Math.random();
+
+            this.enemies.push(
+                new Enemy(
+                    enemyRadius + (this.canvas.width - 2 * enemyRadius) * Math.random(),
+                    this.canvas.height * 0.8 + this.canvas.height * 0.2 * Math.random(),
+                    enemyRadius,
+                    10 * Math.random(),
+                    -5 + 10 * Math.random(),
+                    0,
+                    'blue'
+                ),
+            )
+        }
+    }
+
+    private drawText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, color: string = 'black'): void {
+        ctx.font = "50px Minecraft";
+        ctx.fillStyle = color;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 5;
+        ctx.lineWidth = 2;
+        ctx.strokeText(text, x, y);
+        ctx.shadowBlur = 0;
+        ctx.fillText(text, x, y);
+    }
 }
 
 // Add EventListener to load the game whenever the browser is ready
